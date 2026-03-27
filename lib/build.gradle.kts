@@ -34,8 +34,9 @@ android {
                 arguments += "-DGGML_LLAMAFILE=OFF"
                 arguments += "-DGGML_VULKAN=ON"
 
-                arguments += "-DCMAKE_MAKE_PROGRAM=E:/Android/.Android/cmake/4.1.2/bin/ninja.exe" //编译vulkan时用到，
+                arguments += "-DCMAKE_MAKE_PROGRAM=E:/Android/.Android/cmake/4.1.2/bin/ninja.exe"
                 arguments += "-DGGML_VULKAN_SHADERS_GEN=ON"
+                arguments += "-DGGML_OPENCL_USE_ADRENO_KERNELS=ON"
 
             }
         }

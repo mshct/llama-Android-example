@@ -8,7 +8,7 @@ import androidx.recyclerview.widget.RecyclerView
 
 data class Message(
     val id: String,
-    val content: String,
+    var content: String,
     val isUser: Boolean
 )
 

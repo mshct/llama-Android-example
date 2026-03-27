@@ -117,8 +117,8 @@ class MainActivity : AppCompatActivity() {
                     .setPositiveButton("CPU Only (n_gpu_layers = 0)") { _, _ ->
                         loadModelWithGpuLayers(uri, metadata, 0)
                     }
-                    .setNegativeButton("GPU (n_gpu_layers = 8)") { _, _ ->
-                        loadModelWithGpuLayers(uri, metadata, 8)
+                    .setNegativeButton("GPU (n_gpu_layers = 2)") { _, _ ->
+                        loadModelWithGpuLayers(uri, metadata, 2)
                     }
                     .setCancelable(false)
                     .show()
@@ -155,7 +155,7 @@ class MainActivity : AppCompatActivity() {
                 userActionFab.setImageResource(R.drawable.outline_send_24)
                 userActionFab.isEnabled = true
 
-                ggufTv.append("\n\n当前加载模式: ${if (nGpuLayers == 0) "CPU Only" else "GPU (8)"}")
+                ggufTv.append("\n\n当前加载模式: ${if (nGpuLayers == 0) "CPU Only" else "GPU (2)"}")
             }
         }
     }
@@ -206,41 +206,49 @@ class MainActivity : AppCompatActivity() {
                 Toast.makeText(this, "Input message is empty!", Toast.LENGTH_SHORT).show()
             } else {
                 var startTime = 0L
+                var lastUpdateTime = 0L
                 var tokenCount = 0
                 userInputEt.text = null
                 userInputEt.isEnabled = false
                 userActionFab.isEnabled = false
 
-                // Update message states
+                // 添加用户消息
                 messages.add(Message(UUID.randomUUID().toString(), userMsg, true))
-                lastAssistantMsg.clear()
-                messages.add(Message(UUID.randomUUID().toString(), lastAssistantMsg.toString(), false))
+                // 添加一个空的助手消息（用于实时更新）
+                val assistantMessage = Message(UUID.randomUUID().toString(), "", false)
+                messages.add(assistantMessage)
+
+                messageAdapter.notifyItemRangeInserted(messages.size - 2, 2)
+                messagesRv.scrollToPosition(messages.size - 1)
 
                 generationJob = lifecycleScope.launch(Dispatchers.Default) {
                     startTime = System.currentTimeMillis()
+
                     engine.sendUserPrompt(userMsg)
                         .onCompletion {
                             withContext(Dispatchers.Main) {
                                 userInputEt.isEnabled = true
                                 userActionFab.isEnabled = true
+                                val duration = (System.currentTimeMillis() - startTime) / 1000.0
+                                val speed = if (tokenCount > 0) tokenCount / duration else 0.0
+                                Log.i(TAG, "推理结束: $tokenCount tokens, 耗时: $duration s, 速度: $speed t/s")
                             }
-                            val duration = (System.currentTimeMillis() - startTime) / 1000.0
-                            val speed = tokenCount / duration
-                            Log.i(TAG, "推理结束: $tokenCount tokens, 耗时: $duration s, 速度: $speed t/s")
-                        }.collect { token ->
+                        }
+                        .collect { token ->
                             tokenCount++
+                            lastAssistantMsg.append(token)
                             if (tokenCount == 1) {
                                 val prefillTime = System.currentTimeMillis() - startTime
-                                Log.d(TAG, "Prefill Time (Time to First Token): $prefillTime ms")
+                                Log.d(TAG, "Prefill Time: $prefillTime ms")
                             }
-                            withContext(Dispatchers.Main) {
-                                val messageCount = messages.size
-                                check(messageCount > 0 && !messages[messageCount - 1].isUser)
 
-                                messages.removeAt(messageCount - 1).copy(
-                                    content = lastAssistantMsg.append(token).toString()
-                                ).let { messages.add(it) }
-                                messageAdapter.notifyItemChanged(messages.size - 1)
+                            val currentTime = System.currentTimeMillis()
+                            if (currentTime - lastUpdateTime > 100 || tokenCount == 1) { // 限制刷新频率
+                                withContext(Dispatchers.Main) {
+                                    assistantMessage.content = lastAssistantMsg.toString()
+                                    messageAdapter.notifyItemChanged(messages.size - 1)
+                                }
+                                lastUpdateTime = currentTime
                             }
                         }
                 }
