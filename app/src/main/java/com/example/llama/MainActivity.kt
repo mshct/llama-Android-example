@@ -229,6 +229,7 @@ class MainActivity : AppCompatActivity() {
                             withContext(Dispatchers.Main) {
                                 userInputEt.isEnabled = true
                                 userActionFab.isEnabled = true
+                                lastAssistantMsg.clear()
                                 val duration = (System.currentTimeMillis() - startTime) / 1000.0
                                 val speed = if (tokenCount > 0) tokenCount / duration else 0.0
                                 Log.i(TAG, "推理结束: $tokenCount tokens, 耗时: $duration s, 速度: $speed t/s")
