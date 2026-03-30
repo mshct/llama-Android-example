@@ -24,18 +24,20 @@ if(DEFINED ANDROID_ABI)
         set(GGML_VULKAN OFF CACHE BOOL "Enable Vulkan backend" FORCE) #(可选)以vulkan为后端
         set(Vulkan_GLSLC_EXECUTABLE "${CMAKE_ANDROID_NDK}/shader-tools/windows-x86_64/glslc.exe" CACHE FILEPATH "Path to glslc" FORCE)
 
-        set(GGML_OPENCL ON CACHE BOOL "Enable OpenCL backend for Adreno 740" FORCE) #(可选)以opencl为后端
+        if(GGML_OPENCL)
+          set(GGML_OPENCL ON CACHE BOOL "Enable OpenCL backend for Adreno 740" FORCE) #(可选)以opencl为后端
 
-                set(MY_JNI_LIBS_PATH "D:/llamaTest/app/src/main/jniLibs/arm64-v8a") #设置为libOpenCL.so的保存路径
-                set(OPENCL_LIB_FILE "${MY_JNI_LIBS_PATH}/libOpenCL.so")
+                  set(MY_JNI_LIBS_PATH "D:/llamaTest/app/src/main/jniLibs/arm64-v8a") #设置为libOpenCL.so的保存路径
+                  set(OPENCL_LIB_FILE "${MY_JNI_LIBS_PATH}/libOpenCL.so")
 
-                add_library(opencl_prebuilt SHARED IMPORTED)
-                set_target_properties(opencl_prebuilt PROPERTIES IMPORTED_LOCATION ${OPENCL_LIB_FILE})
+                  add_library(opencl_prebuilt SHARED IMPORTED)
+                  set_target_properties(opencl_prebuilt PROPERTIES IMPORTED_LOCATION ${OPENCL_LIB_FILE})
 
-                set(OPENCL_INCLUDE_DIR "${CMAKE_CURRENT_LIST_DIR}/llama-source/ggml/src/ggml-opencl/third-party" CACHE PATH "" FORCE)
-                set(OPENCL_LIBRARY opencl_prebuilt CACHE FILEPATH "" FORCE)
-        set(GGML_OPENCL_USE_ADRENO_KERNELS ON CACHE BOOL "Use Adreno optimized kernels" FORCE)
-        set(GGML_OPENCL_EMBED_KERNELS ON CACHE BOOL "Embed OpenCL kernels into binary" FORCE)
+                  set(OPENCL_INCLUDE_DIR "${CMAKE_CURRENT_LIST_DIR}/llama-source/ggml/src/ggml-opencl/third-party" CACHE PATH "" FORCE)
+                  set(OPENCL_LIBRARY opencl_prebuilt CACHE FILEPATH "" FORCE)
+          set(GGML_OPENCL_USE_ADRENO_KERNELS ON CACHE BOOL "Use Adreno optimized kernels" FORCE)
+          set(GGML_OPENCL_EMBED_KERNELS ON CACHE BOOL "Embed OpenCL kernels into binary" FORCE)
+        endif()
 
         set(GGML_HEXAGON OFF CACHE BOOL "Hexagon DSP backend disabled now" FORCE)
 
@@ -72,9 +74,13 @@ target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
 target_link_libraries(${CMAKE_PROJECT_NAME}
         llama
         common
-        opencl_prebuilt
         android
         log)
+
+if(GGML_OPENCL)
+    target_link_libraries(${CMAKE_PROJECT_NAME} opencl_prebuilt)
+endif()
+
 
 # ====================== 构建信息 ======================
 message(STATUS "=== Build Summary ===")
