@@ -561,8 +561,8 @@ void ggml_backend_load_all_from_path(const char * dir_path) {
     ggml_backend_load_best("sycl", silent, dir_path);
     ggml_backend_load_best("vulkan", silent, dir_path);
     ggml_backend_load_best("virtgpu", silent, dir_path);
-    ggml_backend_load_best("opencl", false, dir_path);
-    ggml_backend_load_best("hexagon", silent, dir_path);
+    ggml_backend_load_best("opencl", silent, dir_path);
+    ggml_backend_load_best("hexagon", true, dir_path);
     ggml_backend_load_best("musa", silent, dir_path);
     ggml_backend_load_best("openvino", silent, dir_path);
     ggml_backend_load_best("cpu", silent, dir_path);

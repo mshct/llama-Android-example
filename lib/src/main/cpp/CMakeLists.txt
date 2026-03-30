@@ -37,6 +37,8 @@ if(DEFINED ANDROID_ABI)
         set(GGML_OPENCL_USE_ADRENO_KERNELS ON CACHE BOOL "Use Adreno optimized kernels" FORCE)
         set(GGML_OPENCL_EMBED_KERNELS ON CACHE BOOL "Embed OpenCL kernels into binary" FORCE)
 
+        set(GGML_HEXAGON OFF CACHE BOOL "Hexagon DSP backend disabled now" FORCE)
+
         #message(STATUS "=== Vulkan backend ENABLED (recommended for non-Snapdragon) ===")
     elseif(ANDROID_ABI STREQUAL "x86_64")
         set(GGML_SYSTEM_ARCH "x86")

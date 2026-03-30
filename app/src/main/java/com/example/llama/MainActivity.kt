@@ -37,6 +37,13 @@ class MainActivity : AppCompatActivity() {
     private lateinit var userInputEt: EditText
     private lateinit var userActionFab: FloatingActionButton
 
+    // 性能指标显示控件
+    private lateinit var tvPrefillTime: TextView
+    private lateinit var tvInferenceTime: TextView
+    private lateinit var tvTokenCount: TextView
+    private lateinit var tvTokenSpeed: TextView
+    private lateinit var tvGpuMode: TextView
+
     // Arm AI Chat inference engine
     private lateinit var engine: InferenceEngine
     private var generationJob: Job? = null
@@ -62,6 +69,14 @@ class MainActivity : AppCompatActivity() {
         messagesRv.adapter = messageAdapter
         userInputEt = findViewById(R.id.user_input)
         userActionFab = findViewById(R.id.fab)
+
+        // 初始化性能指标控件
+        tvPrefillTime = findViewById(R.id.tv_prefill_time)
+        tvInferenceTime = findViewById(R.id.tv_inference_time)
+        tvTokenCount = findViewById(R.id.tv_token_count)
+        tvTokenSpeed = findViewById(R.id.tv_token_speed)
+        tvGpuMode = findViewById(R.id.tv_gpu_mode)
+
 
         // Arm AI Chat initialization
         lifecycleScope.launch(Dispatchers.Default) {
@@ -117,8 +132,8 @@ class MainActivity : AppCompatActivity() {
                     .setPositiveButton("CPU Only (n_gpu_layers = 0)") { _, _ ->
                         loadModelWithGpuLayers(uri, metadata, 0)
                     }
-                    .setNegativeButton("GPU (n_gpu_layers = 2)") { _, _ ->
-                        loadModelWithGpuLayers(uri, metadata, 2)
+                    .setNegativeButton("GPU") { _, _ ->
+                        showGpuLayersInputDialog(uri, metadata)
                     }
                     .setCancelable(false)
                     .show()
@@ -126,6 +141,62 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun showGpuLayersInputDialog(uri: Uri, metadata: GgufMetadata) {
+        val inputEditText = EditText(this).apply {
+            hint = "请输入 GPU 层数 (0-100, -1 表示全部)"
+            inputType = android.text.InputType.TYPE_CLASS_NUMBER or android.text.InputType.TYPE_NUMBER_FLAG_SIGNED
+            setText("2") // 默认值设为 2
+        }
+
+        AlertDialog.Builder(this)
+            .setTitle("GPU 层数设置")
+            .setMessage("请设置 n_gpu_layers 的值:\n\n- 0: 仅使用 CPU\n- 正数: 指定 GPU 处理的层数\n- -1: 全部加载到 GPU")
+            .setView(inputEditText)
+            .setPositiveButton("确定") { _, _ ->
+                val inputText = inputEditText.text.toString()
+                if (inputText.isNotEmpty()) {
+                    try {
+                        val gpuLayers = inputText.toInt()
+                        // 验证输入范围
+                        val validGpuLayers = when {
+                            gpuLayers < -1 -> {
+                                Toast.makeText(this, "层数不能小于 -1，已设置为 -1", Toast.LENGTH_SHORT).show()
+                                -1
+                            }
+                            gpuLayers > 100 -> {
+                                Toast.makeText(this, "层数超过建议范围，已设置为 100", Toast.LENGTH_SHORT).show()
+                                100
+                            }
+                            else -> gpuLayers
+                        }
+                        loadModelWithGpuLayers(uri, metadata, validGpuLayers)
+                    } catch (e: NumberFormatException) {
+                        Toast.makeText(this, "请输入有效的数字", Toast.LENGTH_SHORT).show()
+                        // 重新显示对话框
+                        showGpuLayersInputDialog(uri, metadata)
+                    }
+                } else {
+                    Toast.makeText(this, "请输入 GPU 层数", Toast.LENGTH_SHORT).show()
+                    // 重新显示对话框
+                    showGpuLayersInputDialog(uri, metadata)
+                }
+            }
+            .setNegativeButton("取消") { _, _ ->
+                // 用户取消，重新显示选择对话框
+                AlertDialog.Builder(this@MainActivity)
+                    .setTitle("选择加载模式")
+                    .setMessage("请选择 CPU 或 GPU 模式进行对比测试")
+                    .setPositiveButton("CPU Only (n_gpu_layers = 0)") { _, _ ->
+                        loadModelWithGpuLayers(uri, metadata, 0)
+                    }
+                    .setNegativeButton("GPU (自定义层数)") { _, _ ->
+                        showGpuLayersInputDialog(uri, metadata)
+                    }
+                    .setCancelable(false)
+                    .show()
+            }
+            .show()
+    }
     /**
      * 根据用户选择的 GPU layers 加载模型
      */
@@ -155,7 +226,9 @@ class MainActivity : AppCompatActivity() {
                 userActionFab.setImageResource(R.drawable.outline_send_24)
                 userActionFab.isEnabled = true
 
-                ggufTv.append("\n\n当前加载模式: ${if (nGpuLayers == 0) "CPU Only" else "GPU (2)"}")
+                ggufTv.append("\n\n当前加载模式: ${if (nGpuLayers == 0) "CPU Only" else "GPU ($nGpuLayers)"}")
+                var modetext = if (nGpuLayers == 0) "CPU Only 模式" else "GPU 模式 (${nGpuLayers} layers)"
+                tvGpuMode.text = "当前模式： $modetext"
             }
         }
     }
@@ -223,6 +296,7 @@ class MainActivity : AppCompatActivity() {
 
                 generationJob = lifecycleScope.launch(Dispatchers.Default) {
                     startTime = System.currentTimeMillis()
+                    var prefillTime: Long = 0
 
                     engine.sendUserPrompt(userMsg)
                         .onCompletion {
@@ -232,6 +306,10 @@ class MainActivity : AppCompatActivity() {
                                 lastAssistantMsg.clear()
                                 val duration = (System.currentTimeMillis() - startTime) / 1000.0
                                 val speed = if (tokenCount > 0) tokenCount / duration else 0.0
+                                tvPrefillTime.text = String.format("%.2f ms", prefillTime.toDouble())
+                                tvInferenceTime.text = String.format("%.2f s", duration)
+                                tvTokenCount.text = tokenCount.toString()
+                                tvTokenSpeed.text = String.format("%.2f t/s", speed)
                                 Log.i(TAG, "推理结束: $tokenCount tokens, 耗时: $duration s, 速度: $speed t/s")
                             }
                         }
@@ -239,7 +317,7 @@ class MainActivity : AppCompatActivity() {
                             tokenCount++
                             lastAssistantMsg.append(token)
                             if (tokenCount == 1) {
-                                val prefillTime = System.currentTimeMillis() - startTime
+                                prefillTime = System.currentTimeMillis() - startTime
                                 Log.d(TAG, "Prefill Time: $prefillTime ms")
                             }
 
