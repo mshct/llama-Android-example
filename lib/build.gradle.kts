@@ -20,6 +20,9 @@ android {
         }
         externalNativeBuild {
             cmake {
+                val enableVulkan = project.findProperty("ENABLE_VULKAN")?.toString()?.toBoolean() ?: true
+                val enableOpenCL = project.findProperty("ENABLE_OPENCL")?.toString()?.toBoolean() ?: false
+
                 arguments += "-DCMAKE_BUILD_TYPE=Release"
                 arguments += "-DCMAKE_MESSAGE_LOG_LEVEL=DEBUG"
                 arguments += "-DCMAKE_VERBOSE_MAKEFILE=ON"
@@ -32,12 +35,11 @@ android {
                 arguments += "-DGGML_BACKEND_DL=ON"
                 arguments += "-DGGML_CPU_ALL_VARIANTS=ON"
                 arguments += "-DGGML_LLAMAFILE=OFF"
-                arguments += "-DGGML_VULKAN=ON"
 
-                arguments += "-DCMAKE_MAKE_PROGRAM=E:/Android/.Android/cmake/4.1.2/bin/ninja.exe"
-                arguments += "-DGGML_VULKAN_SHADERS_GEN=ON"
-                arguments += "-DGGML_OPENCL_USE_ADRENO_KERNELS=ON"
-
+                arguments += "-DGGML_VULKAN=${if (enableVulkan) "ON" else "OFF"}"
+                arguments += "-DGGML_VULKAN_SHADERS_GEN=${if (enableVulkan) "ON" else "OFF"}"
+                arguments += "-DGGML_OPENCL=${if (enableOpenCL) "ON" else "OFF"}"
+                arguments += "-DGGML_OPENCL_USE_ADRENO_KERNELS=${if (enableOpenCL) "ON" else "OFF"}"
             }
         }
         aarMetadata {
