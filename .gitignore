@@ -1,3 +1,7 @@
+# Model and temp files
+models/
+tmp/
+
 # Gradle files
 .gradle/
 build/
