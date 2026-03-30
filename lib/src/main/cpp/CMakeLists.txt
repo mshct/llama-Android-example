@@ -19,23 +19,13 @@ if(DEFINED ANDROID_ABI)
     message(STATUS "Detected Android ABI: ${ANDROID_ABI}")
     if(ANDROID_ABI STREQUAL "arm64-v8a")
         set(GGML_SYSTEM_ARCH "ARM")
-        set(GGML_CPU_KLEIDIAI ON)
+                set(GGML_CPU_KLEIDIAI OFF) # disable KleidiAI to avoid online fetch failures
         set(GGML_OPENMP ON)
         set(GGML_VULKAN OFF CACHE BOOL "Enable Vulkan backend" FORCE) #(可选)以vulkan为后端
         set(Vulkan_GLSLC_EXECUTABLE "${CMAKE_ANDROID_NDK}/shader-tools/windows-x86_64/glslc.exe" CACHE FILEPATH "Path to glslc" FORCE)
 
-        set(GGML_OPENCL ON CACHE BOOL "Enable OpenCL backend for Adreno 740" FORCE) #(可选)以opencl为后端
-
-                set(MY_JNI_LIBS_PATH "D:/llamaTest/app/src/main/jniLibs/arm64-v8a") #设置为libOpenCL.so的保存路径
-                set(OPENCL_LIB_FILE "${MY_JNI_LIBS_PATH}/libOpenCL.so")
-
-                add_library(opencl_prebuilt SHARED IMPORTED)
-                set_target_properties(opencl_prebuilt PROPERTIES IMPORTED_LOCATION ${OPENCL_LIB_FILE})
-
-                set(OPENCL_INCLUDE_DIR "${CMAKE_CURRENT_LIST_DIR}/llama-source/ggml/src/ggml-opencl/third-party" CACHE PATH "" FORCE)
-                set(OPENCL_LIBRARY opencl_prebuilt CACHE FILEPATH "" FORCE)
-        set(GGML_OPENCL_USE_ADRENO_KERNELS ON CACHE BOOL "Use Adreno optimized kernels" FORCE)
-        set(GGML_OPENCL_EMBED_KERNELS ON CACHE BOOL "Embed OpenCL kernels into binary" FORCE)
+        # Disable OpenCL to avoid missing OpenCL headers/libs during sync
+        set(GGML_OPENCL OFF CACHE BOOL "Disable OpenCL backend" FORCE)
 
         #message(STATUS "=== Vulkan backend ENABLED (recommended for non-Snapdragon) ===")
     elseif(ANDROID_ABI STREQUAL "x86_64")
@@ -70,7 +60,6 @@ target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
 target_link_libraries(${CMAKE_PROJECT_NAME}
         llama
         common
-        opencl_prebuilt
         android
         log)
 

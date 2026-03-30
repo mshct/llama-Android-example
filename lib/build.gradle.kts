@@ -32,11 +32,8 @@ android {
                 arguments += "-DGGML_BACKEND_DL=ON"
                 arguments += "-DGGML_CPU_ALL_VARIANTS=ON"
                 arguments += "-DGGML_LLAMAFILE=OFF"
-                arguments += "-DGGML_VULKAN=ON"
-
-                arguments += "-DCMAKE_MAKE_PROGRAM=E:/Android/.Android/cmake/4.1.2/bin/ninja.exe"
-                arguments += "-DGGML_VULKAN_SHADERS_GEN=ON"
-                arguments += "-DGGML_OPENCL_USE_ADRENO_KERNELS=ON"
+                arguments += "-DGGML_VULKAN=OFF"
+                arguments += "-DGGML_OPENCL=OFF"
 
             }
         }
