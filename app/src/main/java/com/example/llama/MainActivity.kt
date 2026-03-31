@@ -35,6 +35,9 @@ class MainActivity : AppCompatActivity() {
 
     // setup view elements
     private lateinit var setupView: View
+    private lateinit var backBar: View
+    private lateinit var btnBackToChat: View
+    private lateinit var btnUnloadModel: View
     private lateinit var btnSelectFile: View
     private lateinit var modelSummarySection: View
     private lateinit var tvModelName: TextView
@@ -77,6 +80,9 @@ class MainActivity : AppCompatActivity() {
 
         // setup view
         setupView = findViewById(R.id.setup_view)
+        backBar = findViewById(R.id.back_bar)
+        btnBackToChat = findViewById(R.id.btn_back_to_chat)
+        btnUnloadModel = findViewById(R.id.btn_unload_model)
         btnSelectFile = findViewById(R.id.btn_select_file)
         modelSummarySection = findViewById(R.id.model_summary_section)
         tvModelName = findViewById(R.id.tv_model_name)
@@ -117,10 +123,25 @@ class MainActivity : AppCompatActivity() {
 
         btnLoadModel.setOnClickListener { startLoadFlow() }
 
-        btnReconfigure.setOnClickListener {
+        btnBackToChat.setOnClickListener { showChatView() }
+
+        btnUnloadModel.setOnClickListener {
+            engine.cleanUp()
             isModelReady = false
             messages.clear()
             messageAdapter.notifyDataSetChanged()
+            selectedUri = null
+            parsedMetadata = null
+            fullMetadataString = null
+            modelSummarySection.visibility = View.GONE
+            configCard.visibility = View.GONE
+            btnLoadModel.visibility = View.GONE
+            backBar.visibility = View.GONE
+            btnSelectFile.isEnabled = true
+        }
+
+        btnReconfigure.setOnClickListener {
+            backBar.visibility = View.VISIBLE
             showSetupView()
         }
 

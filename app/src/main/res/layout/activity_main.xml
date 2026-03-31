@@ -20,6 +20,37 @@
             android:orientation="vertical"
             android:padding="16dp">
 
+            <!-- shown when a model is already loaded -->
+            <LinearLayout
+                android:id="@+id/back_bar"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginBottom="12dp"
+                android:visibility="gone">
+
+                <TextView
+                    android:id="@+id/btn_back_to_chat"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_height="wrap_content"
+                    android:text="← Back to chat"
+                    android:textColor="@color/accent"
+                    android:textSize="14sp"
+                    android:padding="4dp" />
+
+                <TextView
+                    android:id="@+id/btn_unload_model"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Unload model"
+                    android:textColor="#CC4444"
+                    android:textSize="13sp"
+                    android:padding="4dp" />
+
+            </LinearLayout>
+
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
