@@ -22,6 +22,7 @@ android {
             cmake {
                 val enableVulkan = project.findProperty("ENABLE_VULKAN")?.toString()?.toBoolean() ?: true
                 val enableOpenCL = project.findProperty("ENABLE_OPENCL")?.toString()?.toBoolean() ?: false
+                val openclLibDir = project.findProperty("OPENCL_LIB_DIR")?.toString() ?: ""
 
                 arguments += "-DCMAKE_BUILD_TYPE=Release"
                 arguments += "-DCMAKE_MESSAGE_LOG_LEVEL=DEBUG"
@@ -40,6 +41,9 @@ android {
                 arguments += "-DGGML_VULKAN_SHADERS_GEN=${if (enableVulkan) "ON" else "OFF"}"
                 arguments += "-DGGML_OPENCL=${if (enableOpenCL) "ON" else "OFF"}"
                 arguments += "-DGGML_OPENCL_USE_ADRENO_KERNELS=${if (enableOpenCL) "ON" else "OFF"}"
+                if (openclLibDir.isNotEmpty()) {
+                    arguments += "-DOPENCL_LIB_DIR=$openclLibDir"
+                }
             }
         }
         aarMetadata {

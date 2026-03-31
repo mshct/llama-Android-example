@@ -14,7 +14,7 @@
         >
 
         <uses-library android:name="libOpenCL.so"
-            android:required="true"/>
+            android:required="false"/>
 
 
         <activity

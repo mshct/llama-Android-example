@@ -21,14 +21,27 @@ if(DEFINED ANDROID_ABI)
         set(GGML_SYSTEM_ARCH "ARM")
         set(GGML_CPU_KLEIDIAI ON)
         set(GGML_OPENMP ON)
-        set(GGML_VULKAN OFF CACHE BOOL "Enable Vulkan backend" FORCE) #(可选)以vulkan为后端
-        set(Vulkan_GLSLC_EXECUTABLE "${CMAKE_ANDROID_NDK}/shader-tools/windows-x86_64/glslc.exe" CACHE FILEPATH "Path to glslc" FORCE)
+        # don't FORCE here — lets the gradle property (-DGGML_VULKAN=ON/OFF) win
+        set(GGML_VULKAN OFF CACHE BOOL "Enable Vulkan backend") #(可选)以vulkan为后端
+
+        # pick the right glslc from the NDK based on build host OS
+        if(CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
+            set(_glslc_subdir "windows-x86_64/glslc.exe")
+        elseif(CMAKE_HOST_SYSTEM_NAME STREQUAL "Darwin")
+            set(_glslc_subdir "darwin-x86_64/glslc")
+        else()
+            set(_glslc_subdir "linux-x86_64/glslc")
+        endif()
+        set(Vulkan_GLSLC_EXECUTABLE "${CMAKE_ANDROID_NDK}/shader-tools/${_glslc_subdir}" CACHE FILEPATH "Path to glslc" FORCE)
 
         if(GGML_OPENCL)
           set(GGML_OPENCL ON CACHE BOOL "Enable OpenCL backend for Adreno 740" FORCE) #(可选)以opencl为后端
 
-                  set(MY_JNI_LIBS_PATH "D:/llamaTest/app/src/main/jniLibs/arm64-v8a") #设置为libOpenCL.so的保存路径
-                  set(OPENCL_LIB_FILE "${MY_JNI_LIBS_PATH}/libOpenCL.so")
+                  # OPENCL_LIB_DIR can be set via gradle property; defaults to the app jniLibs dir
+                  if(NOT DEFINED OPENCL_LIB_DIR OR OPENCL_LIB_DIR STREQUAL "")
+                      set(OPENCL_LIB_DIR "${CMAKE_CURRENT_LIST_DIR}/../../../../../app/src/main/jniLibs/arm64-v8a")
+                  endif()
+                  set(OPENCL_LIB_FILE "${OPENCL_LIB_DIR}/libOpenCL.so")
 
                   add_library(opencl_prebuilt SHARED IMPORTED)
                   set_target_properties(opencl_prebuilt PROPERTIES IMPORTED_LOCATION ${OPENCL_LIB_FILE})
