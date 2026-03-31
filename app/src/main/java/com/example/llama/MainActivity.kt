@@ -178,14 +178,14 @@ class MainActivity : AppCompatActivity() {
             withContext(Dispatchers.Main) {
                 btnSelectFile.isEnabled = true
 
-                tvModelName.text = metadata.basic.name ?: metadata.architecture?.architecture ?: "Unknown model"
+                val baseName = metadata.basic.name ?: metadata.architecture?.architecture ?: "Unknown model"
+                tvModelName.text = metadata.basic.sizeLabel?.let { "$baseName $it" } ?: baseName
 
                 val summary = buildList {
-                    metadata.basic.sizeLabel?.let { add(it) }
                     metadata.dimensions?.blockCount?.let { add("$it layers") }
                     metadata.dimensions?.contextLength?.let { add("ctx $it") }
                     metadata.tensorCount.let { add("$it tensors") }
-                }.joinToString(" · ")
+                }.joinToString(", ")
                 tvModelSummary.text = summary
 
                 configCard.visibility = View.VISIBLE
