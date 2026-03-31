@@ -2,10 +2,14 @@ package com.example.llama
 
 import android.net.Uri
 import android.os.Bundle
+import android.text.SpannableStringBuilder
+import android.text.Spanned
+import android.text.style.ForegroundColorSpan
+import android.text.style.StyleSpan
 import android.util.Log
 import android.view.View
 import android.widget.EditText
-import android.widget.LinearLayout
+import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.addCallback
@@ -13,6 +17,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -112,13 +117,7 @@ class MainActivity : AppCompatActivity() {
         btnSelectFile.setOnClickListener { getContent.launch(arrayOf("*/*")) }
 
         tvShowMetadata.setOnClickListener {
-            fullMetadataString?.let { meta ->
-                AlertDialog.Builder(this)
-                    .setTitle("Full model metadata")
-                    .setMessage(meta)
-                    .setPositiveButton("OK", null)
-                    .show()
-            }
+            parsedMetadata?.let { showMetadataDialog(it) }
         }
 
         btnLoadModel.setOnClickListener { startLoadFlow() }
@@ -318,6 +317,125 @@ class MainActivity : AppCompatActivity() {
                     }
             }
         }
+    }
+
+    private fun showMetadataDialog(metadata: GgufMetadata) {
+        val accent = ContextCompat.getColor(this, R.color.accent)
+        val keyColor = 0xFF888888.toInt()
+        val valColor = 0xFFDDDDDD.toInt()
+
+        val ssb = SpannableStringBuilder()
+
+        fun section(name: String) {
+            val start = ssb.length
+            ssb.append("[$name]\n")
+            ssb.setSpan(ForegroundColorSpan(accent), start, ssb.length - 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+            ssb.setSpan(StyleSpan(android.graphics.Typeface.BOLD), start, ssb.length - 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+        }
+
+        fun row(key: String, value: Any?) {
+            if (value == null) return
+            val kStart = ssb.length
+            ssb.append("  ${key.padEnd(14)}")
+            ssb.setSpan(ForegroundColorSpan(keyColor), kStart, ssb.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+            val vStart = ssb.length
+            ssb.append("$value\n")
+            ssb.setSpan(ForegroundColorSpan(valColor), vStart, ssb.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+        }
+
+        val hStart = ssb.length
+        ssb.append("GGUF ${metadata.version}  ·  ${metadata.tensorCount} tensors  ·  ${metadata.kvCount} kv pairs\n\n")
+        ssb.setSpan(ForegroundColorSpan(keyColor), hStart, ssb.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+
+        section("General")
+        row("name", metadata.basic.name)
+        row("size", metadata.basic.sizeLabel)
+        row("label", metadata.basic.nameLabel)
+        row("uuid", metadata.basic.uuid)
+        ssb.append("\n")
+
+        metadata.architecture?.let { arch ->
+            section("Architecture")
+            row("arch", arch.architecture)
+            row("file type", arch.fileType)
+            row("vocab size", arch.vocabSize)
+            row("finetune", arch.finetune)
+            row("quant ver", arch.quantizationVersion)
+            ssb.append("\n")
+        }
+
+        metadata.dimensions?.let { dim ->
+            section("Dimensions")
+            row("context", dim.contextLength)
+            row("embedding", dim.embeddingSize)
+            row("layers", dim.blockCount)
+            row("feed fwd", dim.feedForwardSize)
+            ssb.append("\n")
+        }
+
+        metadata.attention?.let { att ->
+            section("Attention")
+            row("heads", att.headCount)
+            row("kv heads", att.headCountKv)
+            row("key length", att.keyLength)
+            row("val length", att.valueLength)
+            row("rms epsilon", att.layerNormRmsEpsilon)
+            ssb.append("\n")
+        }
+
+        metadata.rope?.let { r ->
+            section("RoPE")
+            row("freq base", r.frequencyBase)
+            row("dim count", r.dimensionCount)
+            row("scaling", r.scalingType)
+            ssb.append("\n")
+        }
+
+        metadata.tokenizer?.let { tok ->
+            section("Tokenizer")
+            row("model", tok.model)
+            row("bos token", tok.bosTokenId)
+            row("eos token", tok.eosTokenId)
+            row("pad token", tok.paddingTokenId)
+            row("add bos", tok.addBosToken)
+            ssb.append("\n")
+        }
+
+        metadata.author?.let { auth ->
+            if (auth.organization != null || auth.author != null || auth.url != null) {
+                section("Author")
+                row("org", auth.organization)
+                row("author", auth.author)
+                row("url", auth.url)
+                row("repo", auth.repoUrl)
+                ssb.append("\n")
+            }
+        }
+
+        metadata.additional?.let { add ->
+            if (add.type != null || add.tags != null) {
+                section("Additional")
+                row("type", add.type)
+                row("description", add.description)
+                row("tags", add.tags?.joinToString(", "))
+                row("languages", add.languages?.joinToString(", "))
+            }
+        }
+
+        val tv = TextView(this).apply {
+            text = ssb
+            typeface = android.graphics.Typeface.MONOSPACE
+            setBackgroundColor(0xFF121212.toInt())
+            setTextColor(valColor)
+            setPadding(48, 48, 48, 48)
+            textSize = 12f
+            setTextIsSelectable(true)
+        }
+        AlertDialog.Builder(this)
+            .setTitle("Model metadata")
+            .setView(ScrollView(this).apply { addView(tv) })
+            .setPositiveButton("OK", null)
+            .show()
     }
 
     private fun ensureModelsDirectory() =
