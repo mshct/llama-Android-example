@@ -37,13 +37,6 @@ class MainActivity : AppCompatActivity() {
     private lateinit var userInputEt: EditText
     private lateinit var userActionFab: FloatingActionButton
 
-    // 性能指标显示控件
-    private lateinit var tvPrefillTime: TextView
-    private lateinit var tvInferenceTime: TextView
-    private lateinit var tvTokenCount: TextView
-    private lateinit var tvTokenSpeed: TextView
-    private lateinit var tvGpuMode: TextView
-
     // Arm AI Chat inference engine
     private lateinit var engine: InferenceEngine
     private var generationJob: Job? = null
@@ -70,12 +63,6 @@ class MainActivity : AppCompatActivity() {
         userInputEt = findViewById(R.id.user_input)
         userActionFab = findViewById(R.id.fab)
 
-        // 初始化性能指标控件
-        tvPrefillTime = findViewById(R.id.tv_prefill_time)
-        tvInferenceTime = findViewById(R.id.tv_inference_time)
-        tvTokenCount = findViewById(R.id.tv_token_count)
-        tvTokenSpeed = findViewById(R.id.tv_token_speed)
-        tvGpuMode = findViewById(R.id.tv_gpu_mode)
 
 
         // Arm AI Chat initialization
@@ -226,9 +213,7 @@ class MainActivity : AppCompatActivity() {
                 userActionFab.setImageResource(R.drawable.outline_send_24)
                 userActionFab.isEnabled = true
 
-                ggufTv.append("\n\n当前加载模式: ${if (nGpuLayers == 0) "CPU Only" else "GPU ($nGpuLayers)"}")
-                var modetext = if (nGpuLayers == 0) "CPU Only 模式" else "GPU 模式 (${nGpuLayers} layers)"
-                tvGpuMode.text = "当前模式： $modetext"
+                ggufTv.append("\n\n当前加载模式: ${if (nGpuLayers == 0) "CPU Only" else "GPU ($nGpuLayers layers)"}")
             }
         }
     }
@@ -304,13 +289,14 @@ class MainActivity : AppCompatActivity() {
                                 userInputEt.isEnabled = true
                                 userActionFab.isEnabled = true
                                 lastAssistantMsg.clear()
-                                val duration = (System.currentTimeMillis() - startTime) / 1000.0
-                                val speed = if (tokenCount > 0) tokenCount / duration else 0.0
-                                tvPrefillTime.text = String.format("%.2f ms", prefillTime.toDouble())
-                                tvInferenceTime.text = String.format("%.2f s", duration)
-                                tvTokenCount.text = tokenCount.toString()
-                                tvTokenSpeed.text = String.format("%.2f t/s", speed)
-                                Log.i(TAG, "推理结束: $tokenCount tokens, 耗时: $duration s, 速度: $speed t/s")
+                                val totalMs = System.currentTimeMillis() - startTime
+                                val speed = if (tokenCount > 0) tokenCount / (totalMs / 1000.0) else 0.0
+                                assistantMessage.prefillMs = prefillTime
+                                assistantMessage.totalMs = totalMs
+                                assistantMessage.tokenCount = tokenCount
+                                assistantMessage.tokensPerSec = speed
+                                messageAdapter.notifyItemChanged(messages.indexOf(assistantMessage))
+                                Log.i(TAG, "done: $tokenCount tokens, ${totalMs}ms, ${"%.2f".format(speed)} t/s")
                             }
                         }
                         .collect { token ->
