@@ -98,7 +98,7 @@
                             android:layout_height="wrap_content"
                             android:text="Show full metadata"
                             android:textSize="12sp"
-                            android:textColor="#6200EE"
+                            android:textColor="@color/accent"
                             android:paddingTop="6dp"
                             android:paddingBottom="2dp" />
 
@@ -231,7 +231,7 @@
                 android:layout_height="wrap_content"
                 android:text="⚙ Reconfigure"
                 android:textSize="12sp"
-                android:textColor="#6200EE"
+                android:textColor="@color/accent"
                 android:padding="8dp" />
 
         </LinearLayout>

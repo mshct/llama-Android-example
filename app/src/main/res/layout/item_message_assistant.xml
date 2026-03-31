@@ -38,7 +38,7 @@
             android:layout_height="wrap_content"
             android:text=" · Details"
             android:textSize="11sp"
-            android:textColor="#6200EE"
+            android:textColor="@color/accent"
             android:padding="2dp" />
 
     </LinearLayout>
