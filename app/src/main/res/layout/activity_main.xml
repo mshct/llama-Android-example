@@ -1,181 +1,255 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/main"
+    android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:layout_width="match_parent">
+    android:fitsSystemWindows="true"
+    tools:context=".MainActivity">
 
+    <!-- ==================== SETUP VIEW ==================== -->
+    <ScrollView
+        android:id="@+id/setup_view"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:fillViewport="true">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="LLM Chat"
+                android:textSize="26sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="2dp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="On-device language model inference"
+                android:textSize="13sp"
+                android:textColor="#888888"
+                android:layout_marginBottom="20dp" />
+
+            <!-- Model card -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
+                app:cardElevation="2dp"
+                app:cardCornerRadius="8dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="12dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="MODEL"
+                        android:textSize="11sp"
+                        android:textStyle="bold"
+                        android:textColor="#888888"
+                        android:letterSpacing="0.1"
+                        android:layout_marginBottom="8dp" />
+
+                    <Button
+                        android:id="@+id/btn_select_file"
+                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Select GGUF File" />
+
+                    <!-- shown after file selected -->
+                    <LinearLayout
+                        android:id="@+id/model_summary_section"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:layout_marginTop="12dp"
+                        android:visibility="gone">
+
+                        <TextView
+                            android:id="@+id/tv_model_name"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:textSize="16sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/tv_model_summary"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:textSize="12sp"
+                            android:textColor="#666666"
+                            android:fontFamily="monospace"
+                            android:layout_marginTop="2dp" />
+
+                        <TextView
+                            android:id="@+id/tv_show_metadata"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Show full metadata"
+                            android:textSize="12sp"
+                            android:textColor="#6200EE"
+                            android:paddingTop="6dp"
+                            android:paddingBottom="2dp" />
+
+                    </LinearLayout>
+
+                </LinearLayout>
+
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Config card (hidden until file is selected) -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/config_card"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
+                android:visibility="gone"
+                app:cardElevation="2dp"
+                app:cardCornerRadius="8dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="12dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="CONFIGURATION"
+                        android:textSize="11sp"
+                        android:textStyle="bold"
+                        android:textColor="#888888"
+                        android:letterSpacing="0.1"
+                        android:layout_marginBottom="12dp" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="GPU layers"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="0 = CPU only · positive = partial GPU · -1 = all layers on GPU"
+                        android:textSize="11sp"
+                        android:textColor="#888888"
+                        android:layout_marginBottom="4dp" />
+
+                    <EditText
+                        android:id="@+id/et_gpu_layers"
+                        android:layout_width="100dp"
+                        android:layout_height="wrap_content"
+                        android:inputType="numberSigned"
+                        android:text="0" />
+
+                </LinearLayout>
+
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Load button (hidden until file is selected) -->
+            <Button
+                android:id="@+id/btn_load_model"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Load Model"
+                android:visibility="gone"
+                android:layout_marginBottom="8dp" />
+
+            <!-- Loading status -->
+            <LinearLayout
+                android:id="@+id/loading_section"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:visibility="gone"
+                android:layout_marginBottom="8dp">
+
+                <ProgressBar
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:layout_marginEnd="12dp"
+                    style="?android:attr/progressBarStyleSmall" />
+
+                <TextView
+                    android:id="@+id/tv_loading_status"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="13sp"
+                    android:text="Loading model..." />
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+    </ScrollView>
+
+    <!-- ==================== CHAT VIEW ==================== -->
     <LinearLayout
-        android:fitsSystemWindows="true"
+        android:id="@+id/chat_view"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical"
-        android:layout_marginEnd="4dp"
-        tools:context=".MainActivity">
+        android:visibility="gone">
 
-        <ScrollView
+        <!-- Header: model info + reconfigure button -->
+        <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1"
-            android:fadeScrollbars="false">
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingHorizontal="12dp"
+            android:paddingVertical="8dp">
 
             <TextView
-                android:id="@+id/gguf"
-                android:layout_width="match_parent"
+                android:id="@+id/tv_chat_info"
+                android:layout_width="0dp"
+                android:layout_weight="1"
                 android:layout_height="wrap_content"
-                android:padding="16dp"
-                android:text="Selected GGUF model's metadata will show here."
-                style="@style/TextAppearance.MaterialComponents.Body2" />
+                android:textSize="12sp"
+                android:fontFamily="monospace"
+                android:textColor="#555555"
+                tools:text="Qwen3-4B · CPU only" />
 
-        </ScrollView>
+            <TextView
+                android:id="@+id/btn_reconfigure"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="⚙ Reconfigure"
+                android:textSize="12sp"
+                android:textColor="#6200EE"
+                android:padding="8dp" />
+
+        </LinearLayout>
 
         <com.google.android.material.divider.MaterialDivider
             android:layout_width="match_parent"
-            android:layout_height="2dp"
-            android:layout_marginHorizontal="16dp" />
+            android:layout_height="1dp"
+            android:layout_marginHorizontal="8dp" />
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/messages"
             android:layout_width="match_parent"
             android:layout_height="0dp"
-            android:layout_weight="4"
+            android:layout_weight="1"
             android:fadeScrollbars="false"
             android:scrollbars="vertical"
             app:reverseLayout="true"
-            tools:listitem="@layout/item_message_assistant"/>
-
-        <!-- 性能指标显示区域 -->
-        <com.google.android.material.card.MaterialCardView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginHorizontal="8dp"
-            android:layout_marginTop="4dp"
-            android:layout_marginBottom="4dp"
-            app:cardElevation="2dp"
-            app:cardCornerRadius="8dp">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="12dp">
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="性能指标"
-                    android:textSize="14sp"
-                    android:textStyle="bold"
-                    android:textColor="@color/design_default_color_primary"
-                    android:layout_marginBottom="8dp" />
-
-                <GridLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:columnCount="2"
-                    android:rowCount="4"
-                    android:alignmentMode="alignMargins"
-                    android:columnOrderPreserved="false"
-                    android:paddingVertical="4dp">
-
-                    <!-- Prefill 用时 -->
-                    <TextView
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_columnWeight="1"
-                        android:layout_marginEnd="8dp"
-                        android:text="Prefill 用时:"
-                        android:textSize="12sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:id="@+id/tv_prefill_time"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_columnWeight="1"
-                        android:text="--"
-                        android:textSize="12sp"
-                        android:fontFamily="monospace" />
-
-                    <!-- 推理用时 -->
-                    <TextView
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_columnWeight="1"
-                        android:layout_marginEnd="8dp"
-                        android:layout_marginTop="8dp"
-                        android:text="推理总用时:"
-                        android:textSize="12sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:id="@+id/tv_inference_time"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_columnWeight="1"
-                        android:layout_marginTop="8dp"
-                        android:text="--"
-                        android:textSize="12sp"
-                        android:fontFamily="monospace" />
-
-                    <!-- Token 数量 -->
-                    <TextView
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_columnWeight="1"
-                        android:layout_marginEnd="8dp"
-                        android:layout_marginTop="8dp"
-                        android:text="Token 数量:"
-                        android:textSize="12sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:id="@+id/tv_token_count"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_columnWeight="1"
-                        android:layout_marginTop="8dp"
-                        android:text="--"
-                        android:textSize="12sp"
-                        android:fontFamily="monospace" />
-
-                    <!-- Token 速度 -->
-                    <TextView
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_columnWeight="1"
-                        android:layout_marginEnd="8dp"
-                        android:layout_marginTop="8dp"
-                        android:text="Token 速度:"
-                        android:textSize="12sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:id="@+id/tv_token_speed"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_columnWeight="1"
-                        android:layout_marginTop="8dp"
-                        android:text="--"
-                        android:textSize="12sp"
-                        android:fontFamily="monospace" />
-
-                </GridLayout>
-
-                <TextView
-                    android:id="@+id/tv_gpu_mode"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:text="当前模式: --"
-                    android:textSize="11sp"
-                    android:textColor="@color/design_default_color_secondary"
-                    android:gravity="center" />
-
-            </LinearLayout>
-
-        </com.google.android.material.card.MaterialCardView>
+            tools:listitem="@layout/item_message_assistant" />
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -192,18 +266,18 @@
                 android:layout_height="match_parent"
                 android:padding="8dp"
                 style="@style/TextAppearance.MaterialComponents.Body2"
-                android:hint="Please first pick a GGUF model file to import." />
+                android:hint="Type a message..." />
 
             <com.google.android.material.floatingactionbutton.FloatingActionButton
                 android:id="@+id/fab"
-                android:enabled="true"
                 style="@style/Widget.Material3.FloatingActionButton.Primary"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_margin="12dp"
-                android:src="@drawable/outline_folder_open_24" />
+                android:src="@drawable/outline_send_24" />
 
         </LinearLayout>
 
     </LinearLayout>
-</androidx.constraintlayout.widget.ConstraintLayout>
+
+</FrameLayout>
