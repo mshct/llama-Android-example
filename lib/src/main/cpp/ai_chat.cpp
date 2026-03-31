@@ -99,6 +99,8 @@ static llama_context *init_context(llama_model *model, const int n_ctx = DEFAULT
     ctx_params.n_ubatch = BATCH_SIZE;
     ctx_params.n_threads = n_threads;
     ctx_params.n_threads_batch = n_threads;
+    // FA produces garbage on Adreno Vulkan — disable globally until upstream fixes it
+    ctx_params.flash_attn_type = LLAMA_FLASH_ATTN_TYPE_DISABLED;
     auto *context = llama_init_from_model(g_model, ctx_params);
     if (context == nullptr) {
         LOGe("%s: llama_new_context_with_model() returned null)", __func__);
