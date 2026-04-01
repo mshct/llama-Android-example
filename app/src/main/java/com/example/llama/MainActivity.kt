@@ -197,14 +197,20 @@ class MainActivity : AppCompatActivity() {
         modelSummarySection.visibility = View.VISIBLE
 
         lifecycleScope.launch(Dispatchers.IO) {
-            val metadata = contentResolver.openInputStream(uri)?.use {
-                GgufMetadataReader.create().readStructuredMetadata(it)
-            } ?: run {
-                Log.e(TAG, "Failed to parse GGUF metadata")
+            val metadata = try {
+                contentResolver.openInputStream(uri)?.use {
+                    GgufMetadataReader.create().readStructuredMetadata(it)
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to parse GGUF metadata", e)
+                null
+            }
+
+            if (metadata == null) {
                 withContext(Dispatchers.Main) {
                     btnSelectFile.isEnabled = true
                     modelSummarySection.visibility = View.GONE
-                    Toast.makeText(this@MainActivity, "Failed to read file", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@MainActivity, "Not a valid GGUF file", Toast.LENGTH_SHORT).show()
                 }
                 return@launch
             }
