@@ -36,6 +36,11 @@ interface InferenceEngine {
     fun availableBackends(): String
 
     /**
+     * Returns the number of tokens in the last processed prompt (set after processUserPrompt completes).
+     */
+    fun getLastPromptTokenCount(): Int
+
+    /**
      * Runs a benchmark with the specified parameters.
      */
     suspend fun bench(pp: Int, tg: Int, pl: Int, nr: Int = 1): String

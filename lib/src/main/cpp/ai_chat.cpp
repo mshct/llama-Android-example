@@ -39,6 +39,7 @@ static llama_batch                        g_batch;
 static common_chat_templates_ptr          g_chat_templates;
 static common_sampler                   * g_sampler;
 static int                                g_ubatch_size = BATCH_SIZE;
+static int                                g_last_prompt_token_count = 0;
 
 extern "C"
 JNIEXPORT void JNICALL
@@ -151,6 +152,12 @@ extern "C"
 JNIEXPORT jstring JNICALL
 Java_com_arm_aichat_internal_InferenceEngineImpl_nativeAvailableBackends(JNIEnv *env, jobject /*unused*/) {
     return env->NewStringUTF(get_backend().c_str());
+}
+
+extern "C"
+JNIEXPORT jint JNICALL
+Java_com_arm_aichat_internal_InferenceEngineImpl_nativeGetLastPromptTokenCount(JNIEnv */*env*/, jobject /*unused*/) {
+    return (jint) g_last_prompt_token_count;
 }
 
 extern "C"
@@ -460,6 +467,7 @@ Java_com_arm_aichat_internal_InferenceEngineImpl_processUserPrompt(
     }
 
     // Update position
+    g_last_prompt_token_count = user_prompt_size;
     current_position += user_prompt_size;
     stop_generation_position = current_position + n_predict;
     return 0;

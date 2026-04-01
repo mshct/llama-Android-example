@@ -421,6 +421,7 @@ class MainActivity : AppCompatActivity() {
                         lastAssistantMsg.append(token)
                         if (tokenCount == 1) {
                             prefillTime = System.currentTimeMillis() - startTime
+                            assistantMessage.promptTokenCount = engine.getLastPromptTokenCount()
                         }
                         val now = System.currentTimeMillis()
                         if (now - lastUpdateTime > 100 || tokenCount == 1) {

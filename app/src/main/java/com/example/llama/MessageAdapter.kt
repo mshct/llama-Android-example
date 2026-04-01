@@ -19,7 +19,8 @@ data class Message(
     var prefillMs: Long = 0,
     var totalMs: Long = 0,
     var tokenCount: Int = 0,
-    var tokensPerSec: Double = 0.0
+    var tokensPerSec: Double = 0.0,
+    var promptTokenCount: Int = 0
 )
 
 class MessageAdapter(
@@ -81,8 +82,26 @@ class MessageAdapter(
     }
 
     private fun showStatsDialog(context: Context, msg: Message) {
-        val text = "Prefill:  %.0f ms\nTotal:    %.2f s\nTokens:   %d\nSpeed:    %.2f tok/s"
-            .format(msg.prefillMs.toFloat(), msg.totalMs / 1000.0, msg.tokenCount, msg.tokensPerSec)
+        val genMs = msg.totalMs - msg.prefillMs
+        val prefillRate = if (msg.promptTokenCount > 0 && msg.prefillMs > 0)
+            msg.promptTokenCount / (msg.prefillMs / 1000.0) else null
+        val genRate = if (msg.tokenCount > 0 && genMs > 0)
+            msg.tokenCount / (genMs / 1000.0) else null
+        val totalRate = if (msg.tokenCount > 0 && msg.totalMs > 0)
+            msg.tokenCount / (msg.totalMs / 1000.0) else null
+
+        fun fmtRate(r: Double?) = if (r != null) "%.1f tok/s".format(r) else "-"
+
+        val text = buildString {
+            append("Prefill      ${msg.prefillMs} ms\n")
+            append("             ${fmtRate(prefillRate)}\n")
+            append("\n")
+            append("Tokens       ${msg.tokenCount}\n")
+            append("             ${fmtRate(genRate)}\n")
+            append("\n")
+            append("Total        ${msg.totalMs} ms\n")
+            append("             ${fmtRate(totalRate)}")
+        }
         AlertDialog.Builder(context)
             .setTitle("Generation stats")
             .setMessage(text)

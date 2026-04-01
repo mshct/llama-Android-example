@@ -95,6 +95,9 @@ internal class InferenceEngineImpl private constructor(
     private external fun nativeAvailableBackends(): String
 
     @FastNative
+    private external fun nativeGetLastPromptTokenCount(): Int
+
+    @FastNative
     private external fun benchModel(pp: Int, tg: Int, pl: Int, nr: Int): String
 
     @FastNative
@@ -264,6 +267,8 @@ internal class InferenceEngineImpl private constructor(
     }.flowOn(llamaDispatcher)
 
     override fun availableBackends(): String = nativeAvailableBackends()
+
+    override fun getLastPromptTokenCount(): Int = nativeGetLastPromptTokenCount()
 
     /**
      * Benchmark the model
