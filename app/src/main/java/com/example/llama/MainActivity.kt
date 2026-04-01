@@ -1,5 +1,7 @@
 package com.example.llama
 
+import android.app.ActivityManager
+import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.text.Editable
@@ -32,6 +34,7 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -60,6 +63,9 @@ class MainActivity : AppCompatActivity() {
     private lateinit var etMaxTokens: EditText
     private lateinit var etUbatch: EditText
     private lateinit var btnLoadModel: View
+    private lateinit var tvSysInfo: TextView
+    private lateinit var tvReloadWarning: TextView
+    private lateinit var tvHfLink: TextView
     private lateinit var loadingSection: View
     private lateinit var tvLoadingStatus: TextView
 
@@ -78,6 +84,7 @@ class MainActivity : AppCompatActivity() {
 
     // conversation state
     private var isModelReady = false
+    private var loadedGpuLayers = 0
     private val messages = mutableListOf<Message>()
     private val lastAssistantMsg = StringBuilder()
     private val messageAdapter = MessageAdapter(messages)
@@ -110,6 +117,9 @@ class MainActivity : AppCompatActivity() {
         etTemperature = findViewById(R.id.et_temperature)
         etMaxTokens = findViewById(R.id.et_max_tokens)
         etUbatch = findViewById(R.id.et_ubatch)
+        tvSysInfo = findViewById(R.id.tv_sys_info)
+        tvReloadWarning = findViewById(R.id.tv_reload_warning)
+        tvHfLink = findViewById(R.id.tv_hf_link)
         btnLoadModel = findViewById(R.id.btn_load_model)
         loadingSection = findViewById(R.id.loading_section)
         tvLoadingStatus = findViewById(R.id.tv_loading_status)
@@ -128,7 +138,10 @@ class MainActivity : AppCompatActivity() {
         // slider ↔ number input two-way binding
         sliderGpuLayers.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar, progress: Int, fromUser: Boolean) {
-                if (fromUser) etGpuLayers.setText(progress.toString())
+                if (fromUser) {
+                    etGpuLayers.setText(progress.toString())
+                    updateReloadWarning(progress)
+                }
             }
             override fun onStartTrackingTouch(seekBar: SeekBar) {}
             override fun onStopTrackingTouch(seekBar: SeekBar) {}
@@ -137,14 +150,28 @@ class MainActivity : AppCompatActivity() {
             override fun afterTextChanged(s: Editable?) {
                 val v = s?.toString()?.toIntOrNull() ?: return
                 if (v in 0..sliderGpuLayers.max) sliderGpuLayers.progress = v
+                updateReloadWarning(v)
             }
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
         })
 
-        // engine init
+        tvHfLink.setOnClickListener {
+            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://huggingface.co/models?library=gguf&sort=downloads")))
+        }
+
+        // engine init — fetch backend + device info once initialized
         lifecycleScope.launch(Dispatchers.Default) {
             engine = AiChat.getInferenceEngine(applicationContext)
+            engine.state.first { it is InferenceEngine.State.Initialized }
+            val backends = engine.availableBackends()
+            val cores = Runtime.getRuntime().availableProcessors()
+            val am = getSystemService(ACTIVITY_SERVICE) as ActivityManager
+            val memInfo = ActivityManager.MemoryInfo().also { am.getMemoryInfo(it) }
+            val ramGb = "%.1f GB".format(memInfo.totalMem / 1_073_741_824f)
+            withContext(Dispatchers.Main) {
+                tvSysInfo.text = "Backends: $backends  ·  $ramGb RAM  ·  $cores cores"
+            }
         }
 
         btnStop.setOnClickListener {
@@ -175,6 +202,8 @@ class MainActivity : AppCompatActivity() {
             btnLoadModel.visibility = View.GONE
             backBar.visibility = View.GONE
             btnSelectFile.isEnabled = true
+            loadedGpuLayers = 0
+            tvReloadWarning.visibility = View.GONE
             btnStop.visibility = View.GONE
             btnStop.text = "■  Stop generation"
             btnStop.setTextColor(ContextCompat.getColor(this, R.color.accent))
@@ -298,6 +327,8 @@ class MainActivity : AppCompatActivity() {
 
             withContext(Dispatchers.Main) {
                 isModelReady = true
+                loadedGpuLayers = nGpuLayers
+                tvReloadWarning.visibility = View.GONE
                 val mode = if (nGpuLayers == 0) "CPU only" else "GPU ($nGpuLayers layers)"
                 tvChatInfo.text = "${metadata.basic.name ?: "Model"} · $mode"
                 userInputEt.isEnabled = true
@@ -402,6 +433,11 @@ class MainActivity : AppCompatActivity() {
                     }
             }
         }
+    }
+
+    private fun updateReloadWarning(currentLayers: Int) {
+        tvReloadWarning.visibility =
+            if (isModelReady && currentLayers != loadedGpuLayers) View.VISIBLE else View.GONE
     }
 
     private fun showMetadataDialog(metadata: GgufMetadata) {
