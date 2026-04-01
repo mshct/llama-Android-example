@@ -18,7 +18,7 @@ interface InferenceEngine {
      *
      * @throws UnsupportedArchitectureException if model architecture not supported
      */
-    suspend fun loadModel(pathToModel: String, nGpuLayers: Int = 0)
+    suspend fun loadModel(pathToModel: String, nGpuLayers: Int = 0, nUbatch: Int = DEFAULT_UBATCH)
 
     /**
      * Sends a system prompt to the loaded model
@@ -28,7 +28,7 @@ interface InferenceEngine {
     /**
      * Sends a user prompt to the loaded model and returns a Flow of generated tokens.
      */
-    fun sendUserPrompt(message: String, predictLength: Int = DEFAULT_PREDICT_LENGTH): Flow<String>
+    fun sendUserPrompt(message: String, predictLength: Int = DEFAULT_PREDICT_LENGTH, temp: Float = DEFAULT_SAMPLER_TEMP): Flow<String>
 
     /**
      * Runs a benchmark with the specified parameters.
@@ -68,6 +68,8 @@ interface InferenceEngine {
 
     companion object {
         const val DEFAULT_PREDICT_LENGTH = 1024
+        const val DEFAULT_UBATCH = 128
+        const val DEFAULT_SAMPLER_TEMP = 0.3f
     }
 }
 

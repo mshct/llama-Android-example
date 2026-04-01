@@ -38,6 +38,7 @@ static llama_context                    * g_context;
 static llama_batch                        g_batch;
 static common_chat_templates_ptr          g_chat_templates;
 static common_sampler                   * g_sampler;
+static int                                g_ubatch_size = BATCH_SIZE;
 
 extern "C"
 JNIEXPORT void JNICALL
@@ -75,7 +76,7 @@ Java_com_arm_aichat_internal_InferenceEngineImpl_load(JNIEnv *env, jobject, jstr
     return 0;
 }
 
-static llama_context *init_context(llama_model *model, const int n_ctx = DEFAULT_CONTEXT_SIZE) {
+static llama_context *init_context(llama_model *model, const int n_ctx = DEFAULT_CONTEXT_SIZE, const int n_ubatch = BATCH_SIZE) {
     if (!model) {
         LOGe("%s: model cannot be null", __func__);
         return nullptr;
@@ -95,8 +96,8 @@ static llama_context *init_context(llama_model *model, const int n_ctx = DEFAULT
              __func__, trained_context_size, n_ctx);
     }
     ctx_params.n_ctx = n_ctx;
-    ctx_params.n_batch = BATCH_SIZE;
-    ctx_params.n_ubatch = BATCH_SIZE;
+    ctx_params.n_batch = n_ubatch;
+    ctx_params.n_ubatch = n_ubatch;
     ctx_params.n_threads = n_threads;
     ctx_params.n_threads_batch = n_threads;
     // FA produces garbage on Adreno Vulkan — disable globally until upstream fixes it
@@ -116,11 +117,12 @@ static common_sampler *new_sampler(float temp) {
 
 extern "C"
 JNIEXPORT jint JNICALL
-Java_com_arm_aichat_internal_InferenceEngineImpl_prepare(JNIEnv * /*env*/, jobject /*unused*/) {
-    auto *context = init_context(g_model);
+Java_com_arm_aichat_internal_InferenceEngineImpl_prepare(JNIEnv * /*env*/, jobject /*unused*/, jint n_ubatch) {
+    g_ubatch_size = (int) n_ubatch;
+    auto *context = init_context(g_model, DEFAULT_CONTEXT_SIZE, g_ubatch_size);
     if (!context) { return 1; }
     g_context = context;
-    g_batch = llama_batch_init(BATCH_SIZE, 0, 1);
+    g_batch = llama_batch_init(g_ubatch_size, 0, 1);
     g_chat_templates = common_chat_templates_init(g_model, "");
     g_sampler = new_sampler(DEFAULT_SAMPLER_TEMP);
     return 0;
@@ -325,8 +327,8 @@ static int decode_tokens_in_batches(
         const bool compute_last_logit = false) {
     // Process tokens in batches using the global batch
     LOGd("%s: Decode %d tokens starting at position %d", __func__, (int) tokens.size(), start_pos);
-    for (int i = 0; i < (int) tokens.size(); i += BATCH_SIZE) {
-        const int cur_batch_size = std::min((int) tokens.size() - i, BATCH_SIZE);
+    for (int i = 0; i < (int) tokens.size(); i += g_ubatch_size) {
+        const int cur_batch_size = std::min((int) tokens.size() - i, g_ubatch_size);
         common_batch_clear(batch);
         LOGv("%s: Preparing a batch size of %d starting at: %d", __func__, cur_batch_size, i);
 
@@ -409,10 +411,13 @@ Java_com_arm_aichat_internal_InferenceEngineImpl_processUserPrompt(
         JNIEnv *env,
         jobject /*unused*/,
         jstring juser_prompt,
-        jint n_predict
+        jint n_predict,
+        jfloat temp
 ) {
-    // Reset short-term states
+    // Reset short-term states and re-init sampler with requested temperature
     reset_short_term_states();
+    common_sampler_free(g_sampler);
+    g_sampler = new_sampler((float) temp);
 
     // Obtain and tokenize user prompt
     const auto *const user_prompt = env->GetStringUTFChars(juser_prompt, nullptr);
