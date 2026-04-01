@@ -29,6 +29,7 @@ import com.arm.aichat.InferenceEngine
 import com.arm.aichat.gguf.GgufMetadata
 import com.arm.aichat.gguf.GgufMetadataReader
 import com.google.android.material.floatingactionbutton.FloatingActionButton
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.onCompletion
@@ -174,6 +175,9 @@ class MainActivity : AppCompatActivity() {
             btnLoadModel.visibility = View.GONE
             backBar.visibility = View.GONE
             btnSelectFile.isEnabled = true
+            btnStop.visibility = View.GONE
+            btnStop.text = "■  Stop generation"
+            btnStop.setTextColor(ContextCompat.getColor(this, R.color.accent))
         }
 
         btnReconfigure.setOnClickListener {
@@ -336,6 +340,8 @@ class MainActivity : AppCompatActivity() {
             userInputEt.text = null
             userInputEt.isEnabled = false
             sendFab.isEnabled = false
+            btnStop.text = "■  Stop generation"
+            btnStop.setTextColor(ContextCompat.getColor(this, R.color.accent))
             btnStop.visibility = View.VISIBLE
 
             val userMessage = Message(UUID.randomUUID().toString(), userMsg, true)
@@ -349,11 +355,18 @@ class MainActivity : AppCompatActivity() {
                 startTime = System.currentTimeMillis()
 
                 engine.sendUserPrompt(userMsg, maxTokens, temp)
-                    .onCompletion {
-                        withContext(Dispatchers.Main) {
+                    .onCompletion { cause ->
+                        val wasCancelled = cause is CancellationException
+                        // use lifecycleScope.launch — withContext won't run inside a cancelled job
+                        lifecycleScope.launch(Dispatchers.Main) {
                             userInputEt.isEnabled = true
                             sendFab.isEnabled = true
-                            btnStop.visibility = View.GONE
+                            if (wasCancelled) {
+                                btnStop.text = "◼  Generation stopped"
+                                btnStop.setTextColor(0xFFFF8888.toInt())
+                            } else {
+                                btnStop.visibility = View.GONE
+                            }
                             lastAssistantMsg.clear()
                             val totalMs = System.currentTimeMillis() - startTime
                             val speed = if (tokenCount > 0) tokenCount / (totalMs / 1000.0) else 0.0
