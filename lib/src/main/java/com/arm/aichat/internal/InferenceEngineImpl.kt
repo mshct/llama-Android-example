@@ -92,6 +92,9 @@ internal class InferenceEngineImpl private constructor(
     private external fun systemInfo(): String
 
     @FastNative
+    private external fun nativeAvailableBackends(): String
+
+    @FastNative
     private external fun benchModel(pp: Int, tg: Int, pl: Int, nr: Int): String
 
     @FastNative
@@ -259,6 +262,8 @@ internal class InferenceEngineImpl private constructor(
             throw e
         }
     }.flowOn(llamaDispatcher)
+
+    override fun availableBackends(): String = nativeAvailableBackends()
 
     /**
      * Benchmark the model

@@ -31,6 +31,11 @@ interface InferenceEngine {
     fun sendUserPrompt(message: String, predictLength: Int = DEFAULT_PREDICT_LENGTH, temp: Float = DEFAULT_SAMPLER_TEMP): Flow<String>
 
     /**
+     * Returns comma-separated list of non-CPU backends detected (e.g. "Vulkan,OpenCL"), or "CPU".
+     */
+    fun availableBackends(): String
+
+    /**
      * Runs a benchmark with the specified parameters.
      */
     suspend fun bench(pp: Int, tg: Int, pl: Int, nr: Int = 1): String

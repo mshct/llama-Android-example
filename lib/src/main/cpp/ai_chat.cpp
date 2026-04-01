@@ -148,6 +148,12 @@ Java_com_arm_aichat_internal_InferenceEngineImpl_systemInfo(JNIEnv *env, jobject
 
 extern "C"
 JNIEXPORT jstring JNICALL
+Java_com_arm_aichat_internal_InferenceEngineImpl_nativeAvailableBackends(JNIEnv *env, jobject /*unused*/) {
+    return env->NewStringUTF(get_backend().c_str());
+}
+
+extern "C"
+JNIEXPORT jstring JNICALL
 Java_com_arm_aichat_internal_InferenceEngineImpl_benchModel(JNIEnv *env, jobject /*unused*/, jint pp, jint tg,
                                                       jint pl, jint nr) {
     auto *context = init_context(g_model, pp);
