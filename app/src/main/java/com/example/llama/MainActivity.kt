@@ -2,14 +2,17 @@ package com.example.llama
 
 import android.net.Uri
 import android.os.Bundle
+import android.text.Editable
 import android.text.SpannableStringBuilder
 import android.text.Spanned
+import android.text.TextWatcher
 import android.text.style.ForegroundColorSpan
 import android.text.style.StyleSpan
 import android.util.Log
 import android.view.View
 import android.widget.EditText
 import android.widget.ScrollView
+import android.widget.SeekBar
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.addCallback
@@ -50,6 +53,11 @@ class MainActivity : AppCompatActivity() {
     private lateinit var tvShowMetadata: TextView
     private lateinit var configCard: View
     private lateinit var etGpuLayers: EditText
+    private lateinit var sliderGpuLayers: SeekBar
+    private lateinit var paramsCard: View
+    private lateinit var etTemperature: EditText
+    private lateinit var etMaxTokens: EditText
+    private lateinit var etUbatch: EditText
     private lateinit var btnLoadModel: View
     private lateinit var loadingSection: View
     private lateinit var tvLoadingStatus: TextView
@@ -61,6 +69,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var messagesRv: RecyclerView
     private lateinit var userInputEt: EditText
     private lateinit var sendFab: FloatingActionButton
+    private lateinit var btnStop: TextView
 
     // inference engine
     private lateinit var engine: InferenceEngine
@@ -95,6 +104,11 @@ class MainActivity : AppCompatActivity() {
         tvShowMetadata = findViewById(R.id.tv_show_metadata)
         configCard = findViewById(R.id.config_card)
         etGpuLayers = findViewById(R.id.et_gpu_layers)
+        sliderGpuLayers = findViewById(R.id.slider_gpu_layers)
+        paramsCard = findViewById(R.id.params_card)
+        etTemperature = findViewById(R.id.et_temperature)
+        etMaxTokens = findViewById(R.id.et_max_tokens)
+        etUbatch = findViewById(R.id.et_ubatch)
         btnLoadModel = findViewById(R.id.btn_load_model)
         loadingSection = findViewById(R.id.loading_section)
         tvLoadingStatus = findViewById(R.id.tv_loading_status)
@@ -108,10 +122,32 @@ class MainActivity : AppCompatActivity() {
         messagesRv.adapter = messageAdapter
         userInputEt = findViewById(R.id.user_input)
         sendFab = findViewById(R.id.fab)
+        btnStop = findViewById(R.id.btn_stop)
+
+        // slider ↔ number input two-way binding
+        sliderGpuLayers.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(seekBar: SeekBar, progress: Int, fromUser: Boolean) {
+                if (fromUser) etGpuLayers.setText(progress.toString())
+            }
+            override fun onStartTrackingTouch(seekBar: SeekBar) {}
+            override fun onStopTrackingTouch(seekBar: SeekBar) {}
+        })
+        etGpuLayers.addTextChangedListener(object : TextWatcher {
+            override fun afterTextChanged(s: Editable?) {
+                val v = s?.toString()?.toIntOrNull() ?: return
+                if (v in 0..sliderGpuLayers.max) sliderGpuLayers.progress = v
+            }
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+        })
 
         // engine init
         lifecycleScope.launch(Dispatchers.Default) {
             engine = AiChat.getInferenceEngine(applicationContext)
+        }
+
+        btnStop.setOnClickListener {
+            generationJob?.cancel()
         }
 
         btnSelectFile.setOnClickListener { getContent.launch(arrayOf("*/*")) }
@@ -134,6 +170,7 @@ class MainActivity : AppCompatActivity() {
             fullMetadataString = null
             modelSummarySection.visibility = View.GONE
             configCard.visibility = View.GONE
+            paramsCard.visibility = View.GONE
             btnLoadModel.visibility = View.GONE
             backBar.visibility = View.GONE
             btnSelectFile.isEnabled = true
@@ -179,7 +216,17 @@ class MainActivity : AppCompatActivity() {
                 btnSelectFile.isEnabled = true
 
                 val baseName = metadata.basic.name ?: metadata.architecture?.architecture ?: "Unknown model"
-                tvModelName.text = metadata.basic.sizeLabel?.let { "$baseName $it" } ?: baseName
+                val sizeLabel = metadata.basic.sizeLabel
+                val nameSpan = SpannableStringBuilder(baseName)
+                if (sizeLabel != null) {
+                    nameSpan.append("  $sizeLabel")
+                    nameSpan.setSpan(
+                        ForegroundColorSpan(0xFF888888.toInt()),
+                        baseName.length, nameSpan.length,
+                        Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+                    )
+                }
+                tvModelName.text = nameSpan
 
                 val summary = buildList {
                     metadata.dimensions?.blockCount?.let { add("$it layers") }
@@ -188,7 +235,13 @@ class MainActivity : AppCompatActivity() {
                 }.joinToString(", ")
                 tvModelSummary.text = summary
 
+                // set slider range from model layer count
+                val blockCount = metadata.dimensions?.blockCount ?: 0
+                sliderGpuLayers.max = blockCount
+                sliderGpuLayers.progress = 0
+
                 configCard.visibility = View.VISIBLE
+                paramsCard.visibility = View.VISIBLE
                 btnLoadModel.visibility = View.VISIBLE
             }
         }
@@ -196,6 +249,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun startLoadFlow() {
         val nGpuLayers = etGpuLayers.text.toString().toIntOrNull() ?: 0
+        val nUbatch = etUbatch.text.toString().toIntOrNull() ?: InferenceEngine.DEFAULT_UBATCH
         val uri = selectedUri ?: return
         val metadata = parsedMetadata ?: return
 
@@ -223,7 +277,7 @@ class MainActivity : AppCompatActivity() {
 
             withContext(Dispatchers.Main) { tvLoadingStatus.text = "Loading model (${if (nGpuLayers == 0) "CPU" else "GPU $nGpuLayers layers"})..." }
 
-            engine.loadModel(modelFile.path, nGpuLayers)
+            engine.loadModel(modelFile.path, nGpuLayers, nUbatch)
 
             withContext(Dispatchers.Main) {
                 isModelReady = true
@@ -265,6 +319,9 @@ class MainActivity : AppCompatActivity() {
                 return
             }
 
+            val temp = etTemperature.text.toString().toFloatOrNull() ?: InferenceEngine.DEFAULT_SAMPLER_TEMP
+            val maxTokens = etMaxTokens.text.toString().toIntOrNull() ?: InferenceEngine.DEFAULT_PREDICT_LENGTH
+
             var startTime = 0L
             var lastUpdateTime = 0L
             var tokenCount = 0
@@ -273,6 +330,7 @@ class MainActivity : AppCompatActivity() {
             userInputEt.text = null
             userInputEt.isEnabled = false
             sendFab.isEnabled = false
+            btnStop.visibility = View.VISIBLE
 
             val userMessage = Message(UUID.randomUUID().toString(), userMsg, true)
             val assistantMessage = Message(UUID.randomUUID().toString(), "", false)
@@ -284,11 +342,12 @@ class MainActivity : AppCompatActivity() {
             generationJob = lifecycleScope.launch(Dispatchers.Default) {
                 startTime = System.currentTimeMillis()
 
-                engine.sendUserPrompt(userMsg)
+                engine.sendUserPrompt(userMsg, maxTokens, temp)
                     .onCompletion {
                         withContext(Dispatchers.Main) {
                             userInputEt.isEnabled = true
                             sendFab.isEnabled = true
+                            btnStop.visibility = View.GONE
                             lastAssistantMsg.clear()
                             val totalMs = System.currentTimeMillis() - startTime
                             val speed = if (tokenCount > 0) tokenCount / (totalMs / 1000.0) else 0.0
