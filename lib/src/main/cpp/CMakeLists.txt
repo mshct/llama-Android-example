@@ -39,7 +39,7 @@ if(DEFINED ANDROID_ABI)
 
                   # OPENCL_LIB_DIR can be set via gradle property; defaults to the app jniLibs dir
                   if(NOT DEFINED OPENCL_LIB_DIR OR OPENCL_LIB_DIR STREQUAL "")
-                      set(OPENCL_LIB_DIR "${CMAKE_CURRENT_LIST_DIR}/../../../../../app/src/main/jniLibs/arm64-v8a")
+                      set(OPENCL_LIB_DIR "${CMAKE_CURRENT_LIST_DIR}/../../../../app/src/main/jniLibs/arm64-v8a")
                   endif()
                   set(OPENCL_LIB_FILE "${OPENCL_LIB_DIR}/libOpenCL.so")
 
