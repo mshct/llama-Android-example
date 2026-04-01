@@ -165,27 +165,170 @@
                         android:letterSpacing="0.1"
                         android:layout_marginBottom="12dp" />
 
-                    <TextView
-                        android:layout_width="wrap_content"
+                    <!-- GPU layers: label + number input -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="GPU layers"
-                        android:textSize="14sp"
-                        android:textStyle="bold" />
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_marginBottom="4dp">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_weight="1"
+                            android:layout_height="wrap_content"
+                            android:text="num offloaded layers"
+                            android:textSize="13sp"
+                            android:textColor="#888888" />
+
+                        <EditText
+                            android:id="@+id/et_gpu_layers"
+                            android:layout_width="60dp"
+                            android:layout_height="wrap_content"
+                            android:inputType="number"
+                            android:text="0"
+                            android:gravity="center"
+                            android:textSize="14sp" />
+
+                    </LinearLayout>
+
+                    <SeekBar
+                        android:id="@+id/slider_gpu_layers"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:max="0"
+                        android:progress="0"
+                        android:layout_marginBottom="2dp" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="CPU"
+                            android:textSize="11sp"
+                            android:textColor="#888888" />
+
+                        <Space
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="All GPU"
+                            android:textSize="11sp"
+                            android:textColor="#888888" />
+
+                    </LinearLayout>
+
+                </LinearLayout>
+
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Inference params card (hidden until file is selected) -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/params_card"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
+                android:visibility="gone"
+                app:cardElevation="2dp"
+                app:cardCornerRadius="8dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="12dp">
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="0 = CPU only · positive = partial GPU · -1 = all layers on GPU"
+                        android:text="INFERENCE"
                         android:textSize="11sp"
+                        android:textStyle="bold"
                         android:textColor="#888888"
-                        android:layout_marginBottom="4dp" />
+                        android:letterSpacing="0.1"
+                        android:layout_marginBottom="8dp" />
 
-                    <EditText
-                        android:id="@+id/et_gpu_layers"
-                        android:layout_width="100dp"
+                    <LinearLayout
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:inputType="numberSigned"
-                        android:text="0" />
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_marginBottom="8dp">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_weight="1"
+                            android:layout_height="wrap_content"
+                            android:text="Temperature"
+                            android:textSize="13sp" />
+
+                        <EditText
+                            android:id="@+id/et_temperature"
+                            android:layout_width="72dp"
+                            android:layout_height="wrap_content"
+                            android:inputType="numberDecimal"
+                            android:text="0.3"
+                            android:gravity="center"
+                            android:textSize="14sp" />
+
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_marginBottom="8dp">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_weight="1"
+                            android:layout_height="wrap_content"
+                            android:text="Max reply tokens"
+                            android:textSize="13sp" />
+
+                        <EditText
+                            android:id="@+id/et_max_tokens"
+                            android:layout_width="72dp"
+                            android:layout_height="wrap_content"
+                            android:inputType="number"
+                            android:text="1024"
+                            android:gravity="center"
+                            android:textSize="14sp" />
+
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_weight="1"
+                            android:layout_height="wrap_content"
+                            android:text="Batch size"
+                            android:textSize="13sp" />
+
+                        <EditText
+                            android:id="@+id/et_ubatch"
+                            android:layout_width="72dp"
+                            android:layout_height="wrap_content"
+                            android:inputType="number"
+                            android:text="128"
+                            android:gravity="center"
+                            android:textSize="14sp" />
+
+                    </LinearLayout>
 
                 </LinearLayout>
 
@@ -281,6 +424,16 @@
             android:scrollbars="vertical"
             app:reverseLayout="true"
             tools:listitem="@layout/item_message_assistant" />
+
+        <TextView
+            android:id="@+id/btn_stop"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="■  Stop generation"
+            android:textColor="@color/accent"
+            android:gravity="center"
+            android:padding="10dp"
+            android:visibility="gone" />
 
         <LinearLayout
             android:layout_width="match_parent"
