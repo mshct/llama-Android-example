@@ -62,9 +62,17 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="On-device language model inference"
+                android:text="On-device inference with llama.cpp"
                 android:textSize="13sp"
                 android:textColor="#888888"
+                android:layout_marginBottom="2dp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Mobile App Development · Tsinghua University"
+                android:textSize="11sp"
+                android:textColor="#555555"
                 android:layout_marginBottom="20dp" />
 
             <!-- Model card -->

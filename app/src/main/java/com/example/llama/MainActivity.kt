@@ -182,6 +182,7 @@ class MainActivity : AppCompatActivity() {
 
         btnReconfigure.setOnClickListener {
             backBar.visibility = View.VISIBLE
+            if (isModelReady) btnLoadModel.visibility = View.VISIBLE
             showSetupView()
         }
 
@@ -270,6 +271,12 @@ class MainActivity : AppCompatActivity() {
         val modelName = metadata.filename() + FILE_EXTENSION_GGUF
 
         lifecycleScope.launch(Dispatchers.IO) {
+            if (isModelReady) {
+                withContext(Dispatchers.Main) { tvLoadingStatus.text = "Unloading previous model..." }
+                engine.cleanUp()
+                withContext(Dispatchers.Main) { isModelReady = false }
+            }
+
             withContext(Dispatchers.Main) { tvLoadingStatus.text = "Copying model file..." }
 
             val modelFile = contentResolver.openInputStream(uri)?.use { inputStream ->
